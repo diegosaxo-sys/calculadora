@@ -21,6 +21,40 @@
   --gris-sutil:    rgba(245,240,232,0.08);
 }
 
+/* ─── BRECHA ──────────────────────────────────────────── */
+function calcularBrecha(p1, p2, p3) {
+  // Precio por bolo ya calculado en cada nivel
+  // Objetivo mensual = necesidades × multiplicador
+  const obj1 = state.necesidades;        // ×1 — cubrir gastos
+  const obj2 = state.necesidades * 1.5;  // ×1.5 — crecer
+  const obj3 = state.necesidades * 2;    // ×2 — prosperar
+
+  // Bolos necesarios para alcanzar el objetivo de cada nivel
+  // con el precio de bolo de ese mismo nivel
+  const bolos1 = Math.ceil(obj1 / p1);
+  const bolos2 = Math.ceil(obj2 / p2);
+  const bolos3 = Math.ceil(obj3 / p3);
+
+  document.getElementById('b-precio1').textContent = euro(p1) + '/bolo';
+  document.getElementById('b-precio2').textContent = euro(p2) + '/bolo';
+  document.getElementById('b-precio3').textContent = euro(p3) + '/bolo';
+
+  document.getElementById('b-obj1').textContent = euro(obj1) + '/mes';
+  document.getElementById('b-obj2').textContent = euro(obj2) + '/mes';
+  document.getElementById('b-obj3').textContent = euro(obj3) + '/mes';
+
+  document.getElementById('b-bolos1').textContent = bolos1 + ' bolos';
+  document.getElementById('b-bolos2').textContent = bolos2 + ' bolos';
+  document.getElementById('b-bolos3').textContent = bolos3 + ' bolos';
+
+  // Nota comparativa
+  const diff21 = bolos2 - bolos1;
+  const diff32 = bolos3 - bolos2;
+  document.getElementById('b-nota').textContent =
+    'Subiendo al nivel de crecimiento necesitas ' + diff21 + ' bolo' + (diff21 !== 1 ? 's' : '') +
+    ' más que en supervivencia. Al premium, ' + diff32 + ' más que en crecimiento — pero a mayor precio por bolo.';
+}
+
 /* ─── RESET ───────────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -451,6 +485,60 @@ input[type=range]::-moz-range-thumb {
   margin-top: 4px;
 }
 
+/* ─── TABLA BRECHA ────────────────────────────────────── */
+.brecha-wrap { margin-bottom: 24px; }
+.brecha-titulo {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--dorado);
+  margin-bottom: 16px;
+}
+
+.brecha-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.brecha-table th {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gris);
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(245,240,232,0.08);
+  font-weight: 400;
+}
+.brecha-table th.col-right { text-align: right; }
+.brecha-table td {
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(245,240,232,0.05);
+  color: var(--blanco-suave);
+  vertical-align: middle;
+}
+.brecha-table td.col-right { text-align: right; }
+.brecha-table td.highlight {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--dorado-claro);
+}
+.brecha-table tr.recomendada td { background: rgba(201,168,76,0.06); }
+.tag-mejor {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--dorado);
+  color: var(--negro);
+  padding: 2px 6px;
+  border-radius: 1px;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-family: 'DM Sans', sans-serif;
+}
+
 /* ─── HERO SCREEN ─────────────────────────────────────── */
 .logo-wrap { padding: 40px 0 32px; }
 .logo-wrap img { height: 56px; }
@@ -795,6 +883,41 @@ input[type=range]::-moz-range-thumb {
 
     <div class="diagnóstico-msg" id="r2-msg">—</div>
 
+    <div class="brecha-wrap" id="brecha-wrap" style="display:none">
+      <p class="brecha-titulo">¿Cuántos bolos necesitas por nivel?</p>
+      <table class="brecha-table">
+        <thead>
+          <tr>
+            <th>Nivel</th>
+            <th class="col-right">Precio / bolo</th>
+            <th class="col-right">Objetivo / mes</th>
+            <th class="col-right">Bolos necesarios</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gris);">×1 Supervivencia</span></td>
+            <td class="col-right highlight" id="b-precio1">—</td>
+            <td class="col-right" id="b-obj1">—</td>
+            <td class="col-right highlight" id="b-bolos1">—</td>
+          </tr>
+          <tr style="background:rgba(201,168,76,0.05);">
+            <td><span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--dorado);">×1.5 Crecimiento</span></td>
+            <td class="col-right highlight" id="b-precio2">—</td>
+            <td class="col-right" id="b-obj2">—</td>
+            <td class="col-right highlight" id="b-bolos2">—</td>
+          </tr>
+          <tr>
+            <td><span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gris);">×2 Premium</span></td>
+            <td class="col-right highlight" id="b-precio3">—</td>
+            <td class="col-right" id="b-obj3">—</td>
+            <td class="col-right highlight" id="b-bolos3">—</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:16px;" id="b-nota">—</p>
+    </div>
+
     <div class="divider-v"></div>
 
     <div class="cta-card">
@@ -977,9 +1100,17 @@ function calcularR2() {
   document.getElementById('n2-precio').textContent = euro(p2) + ' / bolo';
   document.getElementById('n3-precio').textContent = euro(p3) + ' / bolo';
 
-  document.getElementById('n1-bolos').textContent = bolos1 + ' bolos al mes para cubrir tus mínimos';
-  document.getElementById('n2-bolos').textContent = bolos2 + ' bolos al mes para cubrir tus mínimos';
-  document.getElementById('n3-bolos').textContent = bolos3 + ' bolos al mes para cubrir tus mínimos';
+  const mens1 = p1 * bolos1;
+  const mens2 = p2 * bolos2;
+  const mens3 = p3 * bolos3;
+
+  document.getElementById('n1-bolos').textContent = bolos1 + ' bolos · ' + euro(mens1) + '/mes';
+  document.getElementById('n2-bolos').textContent = bolos2 + ' bolos · ' + euro(mens2) + '/mes';
+  document.getElementById('n3-bolos').textContent = bolos3 + ' bolos · ' + euro(mens3) + '/mes';
+
+  // Tabla de brecha con precios reales de cada nivel
+  document.getElementById('brecha-wrap').style.display = 'block';
+  calcularBrecha(p1, p2, p3);
 
   // Mensaje
   const gap = base - state.ingreso;
@@ -990,6 +1121,40 @@ function calcularR2() {
     msg = `Ya estás cerca de tu tarifa digna base. El siguiente nivel — ${euro(base * 1.5)} por actuación — es donde empieza el margen de crecimiento real.`;
   }
   document.getElementById('r2-msg').textContent = msg;
+}
+
+/* ─── BRECHA ──────────────────────────────────────────── */
+function calcularBrecha(p1, p2, p3) {
+  // Precio por bolo ya calculado en cada nivel
+  // Objetivo mensual = necesidades × multiplicador
+  const obj1 = state.necesidades;        // ×1 — cubrir gastos
+  const obj2 = state.necesidades * 1.5;  // ×1.5 — crecer
+  const obj3 = state.necesidades * 2;    // ×2 — prosperar
+
+  // Bolos necesarios para alcanzar el objetivo de cada nivel
+  // con el precio de bolo de ese mismo nivel
+  const bolos1 = Math.ceil(obj1 / p1);
+  const bolos2 = Math.ceil(obj2 / p2);
+  const bolos3 = Math.ceil(obj3 / p3);
+
+  document.getElementById('b-precio1').textContent = euro(p1) + '/bolo';
+  document.getElementById('b-precio2').textContent = euro(p2) + '/bolo';
+  document.getElementById('b-precio3').textContent = euro(p3) + '/bolo';
+
+  document.getElementById('b-obj1').textContent = euro(obj1) + '/mes';
+  document.getElementById('b-obj2').textContent = euro(obj2) + '/mes';
+  document.getElementById('b-obj3').textContent = euro(obj3) + '/mes';
+
+  document.getElementById('b-bolos1').textContent = bolos1 + ' bolos';
+  document.getElementById('b-bolos2').textContent = bolos2 + ' bolos';
+  document.getElementById('b-bolos3').textContent = bolos3 + ' bolos';
+
+  // Nota comparativa
+  const diff21 = bolos2 - bolos1;
+  const diff32 = bolos3 - bolos2;
+  document.getElementById('b-nota').textContent =
+    'Subiendo al nivel de crecimiento necesitas ' + diff21 + ' bolo' + (diff21 !== 1 ? 's' : '') +
+    ' más que en supervivencia. Al premium, ' + diff32 + ' más que en crecimiento — pero a mayor precio por bolo.';
 }
 
 /* ─── RESET ───────────────────────────────────────────── */
@@ -1006,6 +1171,7 @@ function resetApp() {
   document.getElementById('btn-s1').disabled = true;
   document.getElementById('btn-s2').disabled = true;
   document.getElementById('btn-s4').disabled = true;
+  document.getElementById('brecha-wrap').style.display = 'none';
   goTo(0);
 }
 </script>
