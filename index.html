@@ -772,7 +772,7 @@ input[type=range]::-moz-range-thumb {
         <div class="nivel-info">
           <p class="nivel-nombre">Supervivencia</p>
           <p class="nivel-precio" id="n1-precio">—</p>
-          <p class="nivel-sub">Mínimo para no perder dinero</p>
+          <p class="nivel-sub" id="n1-bolos">Mínimo para no perder dinero</p>
         </div>
       </div>
       <div class="nivel-card destacado">
@@ -780,7 +780,7 @@ input[type=range]::-moz-range-thumb {
         <div class="nivel-info">
           <p class="nivel-nombre">Crecimiento — objetivo real</p>
           <p class="nivel-precio" id="n2-precio">—</p>
-          <p class="nivel-sub">Margen para invertir en tu carrera</p>
+          <p class="nivel-sub" id="n2-bolos">Margen para invertir en tu carrera</p>
         </div>
       </div>
       <div class="nivel-card">
@@ -788,7 +788,7 @@ input[type=range]::-moz-range-thumb {
         <div class="nivel-info">
           <p class="nivel-nombre">Artista Premium</p>
           <p class="nivel-precio" id="n3-precio">—</p>
-          <p class="nivel-sub">Con posicionamiento claro</p>
+          <p class="nivel-sub" id="n3-bolos">Con posicionamiento claro</p>
         </div>
       </div>
     </div>
@@ -966,9 +966,20 @@ function calcularR2() {
   document.getElementById('r2-hora').textContent  = fmt(state.tarifaHora) + ' €/h';
 
   // Niveles
-  document.getElementById('n1-precio').textContent = euro(base)       + ' / bolo';
-  document.getElementById('n2-precio').textContent = euro(base * 1.5) + ' / bolo';
-  document.getElementById('n3-precio').textContent = euro(base * 2)   + ' / bolo';
+  const p1 = base;
+  const p2 = base * 1.5;
+  const p3 = base * 2;
+  const bolos1 = Math.ceil(state.necesidades / p1);
+  const bolos2 = Math.ceil(state.necesidades / p2);
+  const bolos3 = Math.ceil(state.necesidades / p3);
+
+  document.getElementById('n1-precio').textContent = euro(p1) + ' / bolo';
+  document.getElementById('n2-precio').textContent = euro(p2) + ' / bolo';
+  document.getElementById('n3-precio').textContent = euro(p3) + ' / bolo';
+
+  document.getElementById('n1-bolos').textContent = bolos1 + ' bolos al mes para cubrir tus mínimos';
+  document.getElementById('n2-bolos').textContent = bolos2 + ' bolos al mes para cubrir tus mínimos';
+  document.getElementById('n3-bolos').textContent = bolos3 + ' bolos al mes para cubrir tus mínimos';
 
   // Mensaje
   const gap = base - state.ingreso;
