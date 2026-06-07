@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Calculadora de la Dignidad · Diego Caride</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root {
+  --negro:         #0a0908;
+  --negro-suave:   #111010;
+  --negro-input:   #141312;
+  --dorado:        #c9a84c;
+  --dorado-claro:  #e8c97a;
+  --dorado-tenue:  rgba(201,168,76,0.12);
+  --dorado-borde:  rgba(201,168,76,0.3);
+  --blanco:        #f5f0e8;
+  --blanco-suave:  rgba(245,240,232,0.7);
+  --gris:          rgba(245,240,232,0.35);
+  --gris-sutil:    rgba(245,240,232,0.08);
+}
+
+/* ─── RESET ───────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--negro);
+  color: var(--blanco);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── LAYOUT ──────────────────────────────────────────── */
+.app {
+  width: 100%;
+  max-width: 600px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px 48px;
+  position: relative;
+}
+
+/* ─── PROGRESS BAR ────────────────────────────────────── */
+.progress-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--negro);
+  padding: 20px 0 0;
+  margin: 0 -24px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+.progress-track {
+  height: 1px;
+  background: var(--gris-sutil);
+  border-radius: 1px;
+  overflow: visible;
+  margin-bottom: 20px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, var(--dorado), var(--dorado-claro));
+  transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(201,168,76,0.4);
+}
+.step-label {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 24px;
+}
+.step-label span { color: var(--dorado); }
+
+/* ─── SCREEN BASE ─────────────────────────────────────── */
+.screen {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  animation: fadeUp 0.4s ease both;
+}
+.screen.active { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── TYPOGRAPHY ──────────────────────────────────────── */
+.serif { font-family: 'Cormorant Garamond', serif; font-weight: 300; }
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--dorado);
+  margin-bottom: 16px;
+}
+.headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--blanco);
+}
+.h1 { font-size: clamp(48px, 12vw, 72px); margin-bottom: 20px; }
+.h2 { font-size: clamp(36px, 9vw, 52px); margin-bottom: 16px; }
+.h3 { font-size: clamp(28px, 7vw, 38px); margin-bottom: 12px; }
+em { font-style: italic; color: var(--dorado-claro); }
+.lead {
+  font-size: 16px;
+  color: var(--blanco-suave);
+  line-height: 1.65;
+  margin-bottom: 32px;
+}
+.note {
+  font-size: 13px;
+  color: var(--gris);
+  line-height: 1.6;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+/* ─── DIVIDER ─────────────────────────────────────────── */
+.divider-v {
+  width: 1px;
+  height: 56px;
+  background: linear-gradient(to bottom, transparent, var(--dorado), transparent);
+  margin: 32px 0;
+}
+
+/* ─── INPUTS ──────────────────────────────────────────── */
+.field { margin-bottom: 20px; }
+.field label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dorado);
+  margin-bottom: 8px;
+}
+.field .sublabel {
+  font-size: 13px;
+  color: var(--gris);
+  margin-bottom: 8px;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-wrap .unit {
+  position: absolute;
+  right: 16px;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--dorado);
+  pointer-events: none;
+}
+.input-wrap input {
+  width: 100%;
+  background: var(--negro-input);
+  border: 1px solid var(--dorado-borde);
+  color: var(--blanco);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 300;
+  padding: 14px 48px 14px 16px;
+  border-radius: 2px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -moz-appearance: textfield;
+}
+.input-wrap input::-webkit-outer-spin-button,
+.input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.input-wrap input:focus {
+  border-color: var(--dorado);
+  box-shadow: 0 0 0 1px rgba(201,168,76,0.2);
+}
+.input-wrap input::placeholder { color: var(--gris); font-style: italic; }
+
+/* Inputs con unidad a la izquierda (€) */
+.input-wrap.left-unit .unit { right: auto; left: 16px; }
+.input-wrap.left-unit input { padding-left: 36px; }
+
+/* Horas — más compacto */
+.hours-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.hours-grid .field { margin-bottom: 0; }
+.hours-grid .input-wrap input { font-size: 22px; padding: 12px 40px 12px 14px; }
+.hours-grid .input-wrap .unit { font-size: 18px; }
+
+/* Slider */
+.slider-field { margin-bottom: 20px; }
+.slider-field label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dorado);
+  margin-bottom: 10px;
+}
+.slider-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--dorado-claro);
+  letter-spacing: 0;
+  text-transform: none;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--dorado-borde);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--dorado);
+  border: 2px solid var(--negro);
+  box-shadow: 0 0 6px rgba(201,168,76,0.5);
+}
+input[type=range]::-moz-range-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--dorado);
+  border: 2px solid var(--negro);
+}
+
+/* ─── GASTOS DESGLOSE (toggle) ──────────────────────────── */
+.gastos-toggle {
+  font-size: 13px;
+  color: var(--dorado);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--dorado-borde);
+  margin-bottom: 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  display: block;
+}
+.gastos-detalle {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--negro-suave);
+  border-left: 2px solid var(--dorado);
+  margin-bottom: 16px;
+}
+.gastos-detalle.open { display: flex; }
+.gastos-detalle .field { margin-bottom: 0; }
+.gastos-detalle .input-wrap input { font-size: 20px; }
+
+/* Resultado parcial inline */
+.resultado-inline {
+  padding: 12px 16px;
+  background: var(--dorado-tenue);
+  border-left: 2px solid var(--dorado);
+  font-size: 14px;
+  color: var(--blanco-suave);
+  margin-bottom: 20px;
+}
+.resultado-inline strong {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 20px;
+  color: var(--dorado-claro);
+  font-weight: 300;
+}
+
+/* ─── BOTONES ─────────────────────────────────────────── */
+.btn-primary {
+  display: block;
+  width: 100%;
+  background: var(--dorado);
+  color: var(--negro);
+  border: none;
+  padding: 18px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-primary:hover { background: var(--dorado-claro); }
+.btn-primary:active { transform: scale(0.99); }
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-secondary {
+  display: block;
+  width: 100%;
+  background: transparent;
+  color: var(--gris);
+  border: 1px solid var(--gris-sutil);
+  padding: 14px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-secondary:hover { border-color: var(--dorado-borde); color: var(--blanco-suave); }
+
+/* ─── RESULTADO 1 — TARIFA REAL ──────────────────────── */
+.resultado-hero {
+  padding: 32px 0;
+  text-align: center;
+}
+.resultado-cifra {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(72px, 20vw, 110px);
+  line-height: 1;
+  color: var(--dorado-claro);
+  margin-bottom: 8px;
+}
+.resultado-cifra.malo { color: #e07070; }
+.resultado-cifra.regular { color: var(--dorado-claro); }
+.resultado-cifra.bien { color: #7ec8a0; }
+.resultado-unidad {
+  font-size: 18px;
+  color: var(--gris);
+  margin-bottom: 24px;
+  letter-spacing: 0.1em;
+}
+.comparativa {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--gris-sutil);
+  margin-bottom: 24px;
+}
+.comp-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gris-sutil);
+  font-size: 14px;
+}
+.comp-item:last-child { border-bottom: none; }
+.comp-item .comp-label { color: var(--blanco-suave); }
+.comp-item .comp-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--gris);
+}
+.comp-item.tuya .comp-val { color: var(--dorado-claro); font-size: 22px; }
+.diagnóstico-msg {
+  padding: 20px;
+  background: var(--dorado-tenue);
+  border-left: 2px solid var(--dorado);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--blanco-suave);
+  font-style: italic;
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+/* ─── RESULTADO 2 — TARIFA DIGNA ─────────────────────── */
+.niveles-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.nivel-card {
+  padding: 20px 20px;
+  border: 1px solid var(--dorado-borde);
+  background: var(--negro-suave);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.nivel-card.destacado {
+  border-color: var(--dorado);
+  background: rgba(201,168,76,0.07);
+}
+.nivel-mult {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 32px;
+  color: var(--dorado);
+  flex-shrink: 0;
+  width: 48px;
+  text-align: center;
+}
+.nivel-card.destacado .nivel-mult { color: var(--dorado-claro); font-size: 40px; }
+.nivel-info { flex: 1; text-align: left; }
+.nivel-nombre {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 4px;
+}
+.nivel-card.destacado .nivel-nombre { color: var(--dorado); }
+.nivel-precio {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 30px;
+  color: var(--blanco);
+  line-height: 1;
+}
+.nivel-card.destacado .nivel-precio { font-size: 36px; color: var(--dorado-claro); }
+.nivel-sub {
+  font-size: 12px;
+  color: var(--gris);
+  margin-top: 4px;
+}
+
+/* ─── HERO SCREEN ─────────────────────────────────────── */
+.logo-wrap { padding: 40px 0 32px; }
+.logo-wrap img { height: 56px; }
+.hero-fill { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+/* ─── CTA FINAL ───────────────────────────────────────── */
+.cta-card {
+  padding: 32px 24px;
+  border: 1px solid var(--dorado-borde);
+  background: rgba(201,168,76,0.05);
+  text-align: center;
+  margin-bottom: 24px;
+}
+.cta-card p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--blanco-suave);
+  margin-bottom: 24px;
+  font-style: italic;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+}
+.btn-cta {
+  display: block;
+  width: 100%;
+  background: var(--dorado);
+  color: var(--negro);
+  border: none;
+  padding: 18px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.btn-cta:hover { background: var(--dorado-claro); }
+.reset-link {
+  text-align: center;
+  font-size: 13px;
+  color: var(--gris);
+  margin-top: 32px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--gris-sutil);
+}
+
+/* ─── RESUMEN LATERAL ─────────────────────────────────── */
+.resumen-mini {
+  padding: 16px;
+  background: var(--negro-suave);
+  border-left: 2px solid var(--dorado-borde);
+  margin-bottom: 24px;
+  display: flex;
+  gap: 24px;
+}
+.resumen-mini .res-item { flex: 1; }
+.resumen-mini .res-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gris);
+  margin-bottom: 4px;
+}
+.resumen-mini .res-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--dorado-claro);
+}
+
+/* ─── FOOTER ──────────────────────────────────────────── */
+.app-footer {
+  text-align: center;
+  padding: 24px 0 16px;
+  font-size: 12px;
+  color: var(--gris);
+  letter-spacing: 0.1em;
+}
+.app-footer a { color: var(--dorado); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ░░ PROGRESS ░░ -->
+  <div class="progress-wrap" id="progressWrap" style="display:none">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <p class="step-label">Paso <span id="stepNum">1</span> de 5</p>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SCREEN 0 — INTRO
+  ════════════════════════════════════ -->
+  <div class="screen active" id="screen-0">
+    <div class="logo-wrap">
+      <img src="https://zpumfpjxkahxffkixjsn.supabase.co/storage/v1/object/public/webinar/logo.png" alt="Diego Caride">
+    </div>
+    <div class="hero-fill">
+      <p class="eyebrow">Herramienta gratuita</p>
+      <h1 class="headline h1">La Calculadora<br>de la <em>Dignidad</em></h1>
+      <p class="lead">Descubre en 5 minutos cuánto estás ganando <em>realmente</em> por hora — y lo que necesitas cobrar para vivir de tu música.</p>
+      <div class="divider-v"></div>
+      <p class="note">Necesitarás: el precio de un bolo reciente, los gastos de ese día y las horas que te llevó.</p>
+    </div>
+    <button class="btn-primary" onclick="goTo(1)">EMPEZAR EL CÁLCULO</button>
+    <div class="app-footer">
+      <a href="https://diegocaridemusic.com" target="_blank">diegocaridemusic.com</a>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SCREEN 1 — EL BOLO Y LOS GASTOS
+  ════════════════════════════════════ -->
+  <div class="screen" id="screen-1">
+    <p class="eyebrow">La facturación</p>
+    <h2 class="headline h2">¿Cuánto<br>cobras por<br>un <em>bolo?</em></h2>
+    <p class="lead">Piensa en un bolo reciente: boda, evento, clase, concierto.</p>
+
+    <div class="field">
+      <label>Precio del bolo</label>
+      <div class="input-wrap">
+        <input type="number" id="ingreso" placeholder="150" min="0" oninput="actualizarParcial()">
+        <span class="unit">€</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Gastos directos de ese día</label>
+      <p class="sublabel">Total de gasolina, parking, comida, peajes, cuerdas/cañas…</p>
+      <div class="input-wrap">
+        <input type="number" id="gastos-total" placeholder="40" min="0" oninput="actualizarParcial(); sincronizarGastos()">
+        <span class="unit">€</span>
+      </div>
+    </div>
+
+    <button class="gastos-toggle" onclick="toggleGastos()">Quiero desglosar los gastos →</button>
+    <div class="gastos-detalle" id="gastos-detalle">
+      <div class="field">
+        <label>Gasolina</label>
+        <div class="input-wrap"><input type="number" class="gasto-item" placeholder="15" min="0" oninput="sumarGastos()"><span class="unit">€</span></div>
+      </div>
+      <div class="field">
+        <label>Parking / Peaje</label>
+        <div class="input-wrap"><input type="number" class="gasto-item" placeholder="8" min="0" oninput="sumarGastos()"><span class="unit">€</span></div>
+      </div>
+      <div class="field">
+        <label>Comida / Cena</label>
+        <div class="input-wrap"><input type="number" class="gasto-item" placeholder="12" min="0" oninput="sumarGastos()"><span class="unit">€</span></div>
+      </div>
+      <div class="field">
+        <label>Material (cañas, cuerdas…)</label>
+        <div class="input-wrap"><input type="number" class="gasto-item" placeholder="5" min="0" oninput="sumarGastos()"><span class="unit">€</span></div>
+      </div>
+      <div class="field">
+        <label>Otros</label>
+        <div class="input-wrap"><input type="number" class="gasto-item" placeholder="0" min="0" oninput="sumarGastos()"><span class="unit">€</span></div>
+      </div>
+    </div>
+
+    <div class="resultado-inline" id="beneficio-neto-wrap" style="display:none">
+      Beneficio neto del bolo: <strong id="beneficio-neto">—</strong>
+    </div>
+
+    <button class="btn-primary" id="btn-s1" onclick="goTo(2)" disabled>SIGUIENTE: LAS HORAS REALES</button>
+    <button class="btn-secondary" onclick="goTo(0)">← VOLVER</button>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SCREEN 2 — LAS HORAS REALES
+  ════════════════════════════════════ -->
+  <div class="screen" id="screen-2">
+    <p class="eyebrow">El tiempo real</p>
+    <h2 class="headline h2">Las horas que<br>nadie <em>ve.</em></h2>
+    <p class="lead">Aquí es donde nos engañamos. Suma todas las horas reales que ese bolo te costó.</p>
+
+    <div class="hours-grid">
+      <div class="field">
+        <label>Estudio / prep.</label>
+        <p class="sublabel">Repertorio, arreglos…</p>
+        <div class="input-wrap"><input type="number" id="h-estudio" placeholder="4" min="0" step="0.5" oninput="actualizarHoras()"><span class="unit">h</span></div>
+      </div>
+      <div class="field">
+        <label>Desplazamiento</label>
+        <p class="sublabel">Ida y vuelta</p>
+        <div class="input-wrap"><input type="number" id="h-viaje" placeholder="2.5" min="0" step="0.5" oninput="actualizarHoras()"><span class="unit">h</span></div>
+      </div>
+      <div class="field">
+        <label>Montaje / prueba</label>
+        <p class="sublabel">Setup y sonido</p>
+        <div class="input-wrap"><input type="number" id="h-prueba" placeholder="1" min="0" step="0.5" oninput="actualizarHoras()"><span class="unit">h</span></div>
+      </div>
+      <div class="field">
+        <label>Actuación</label>
+        <p class="sublabel">En directo</p>
+        <div class="input-wrap"><input type="number" id="h-actuacion" placeholder="2" min="0" step="0.5" oninput="actualizarHoras()"><span class="unit">h</span></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Gestión (emails, facturas, llamadas)</label>
+      <div class="input-wrap"><input type="number" id="h-gestion" placeholder="0.5" min="0" step="0.5" oninput="actualizarHoras()"><span class="unit">h</span></div>
+    </div>
+
+    <div class="resultado-inline" id="horas-total-wrap" style="display:none">
+      Total horas reales invertidas: <strong id="horas-total">—</strong>
+    </div>
+
+    <button class="btn-primary" id="btn-s2" onclick="calcularR1(); goTo(3)" disabled>VER MI TARIFA REAL POR HORA</button>
+    <button class="btn-secondary" onclick="goTo(1)">← VOLVER</button>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SCREEN 3 — RESULTADO 1
+  ════════════════════════════════════ -->
+  <div class="screen" id="screen-3">
+    <p class="eyebrow">Tu tarifa real por hora</p>
+    <h2 class="headline h2">Lo que ganas<br><em>de verdad.</em></h2>
+
+    <div class="resultado-hero">
+      <p class="resultado-cifra" id="r1-cifra">—</p>
+      <p class="resultado-unidad">€ por hora real trabajada</p>
+    </div>
+
+    <div class="comparativa">
+      <div class="comp-item">
+        <span class="comp-label">Camarero sin experiencia</span>
+        <span class="comp-val">~10 €/h</span>
+      </div>
+      <div class="comp-item">
+        <span class="comp-label">Repartidor de reparto</span>
+        <span class="comp-val">~11 €/h</span>
+      </div>
+      <div class="comp-item">
+        <span class="comp-label">Cajero de supermercado</span>
+        <span class="comp-val">~10 €/h</span>
+      </div>
+      <div class="comp-item tuya">
+        <span class="comp-label">Tú — con años de formación</span>
+        <span class="comp-val" id="r1-comp">—</span>
+      </div>
+    </div>
+
+    <div class="diagnóstico-msg" id="r1-msg">—</div>
+
+    <button class="btn-primary" onclick="goTo(4)">CALCULAR MI TARIFA DIGNA →</button>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SCREEN 4 — OBJETIVOS MENSUALES
+  ════════════════════════════════════ -->
+  <div class="screen" id="screen-4">
+    <p class="eyebrow">Tu objetivo</p>
+    <h2 class="headline h2">¿Cuánto necesitas<br>al <em>mes?</em></h2>
+    <p class="lead">Para calcular tu Tarifa Digna necesitamos saber cuánto necesitas ganar realmente.</p>
+
+    <div class="field">
+      <label>Ingresos netos mensuales que necesitas</label>
+      <p class="sublabel">Alquiler, facturas, comida, seguros, ahorro, ocio. Sé honesto.</p>
+      <div class="input-wrap">
+        <input type="number" id="necesidades" placeholder="2500" min="0" oninput="actualizarObj()">
+        <span class="unit">€</span>
+      </div>
+    </div>
+
+    <div class="slider-field">
+      <label>
+        Horas productivas al mes
+        <span class="slider-val" id="hp-val">90 h</span>
+      </label>
+      <input type="range" id="horas-prod" min="60" max="120" value="90" step="5" oninput="document.getElementById('hp-val').textContent=this.value+' h'; actualizarObj()">
+      <p class="note">Entre conseguir trabajos, preparar repertorio y actuaciones: 80–100 horas reales al mes.</p>
+    </div>
+
+    <div class="slider-field">
+      <label>
+        Horas reales por bolo (media)
+        <span class="slider-val" id="hb-val">10 h</span>
+      </label>
+      <input type="range" id="horas-bolo" min="4" max="20" value="10" step="1" oninput="document.getElementById('hb-val').textContent=this.value+' h'; actualizarObj()">
+      <p class="note">Incluyendo estudio, viaje, prueba y actuación. Basado en lo que calculaste en el paso anterior.</p>
+    </div>
+
+    <div class="resultado-inline" id="obj-partial" style="display:none">
+      Tarifa/hora objetivo: <strong id="obj-tarifah">—</strong>
+    </div>
+
+    <button class="btn-primary" id="btn-s4" onclick="calcularR2(); goTo(5)" disabled>VER MI TARIFA DIGNA</button>
+    <button class="btn-secondary" onclick="goTo(3)">← VOLVER</button>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SCREEN 5 — RESULTADO 2
+  ════════════════════════════════════ -->
+  <div class="screen" id="screen-5">
+    <p class="eyebrow">Tu Tarifa Digna</p>
+    <h2 class="headline h2">Lo que deberías<br>cobrar <em>de verdad.</em></h2>
+
+    <div class="resumen-mini">
+      <div class="res-item">
+        <p class="res-label">Cobras ahora</p>
+        <p class="res-val" id="r2-ahora">—</p>
+      </div>
+      <div class="res-item">
+        <p class="res-label">Tu real por hora</p>
+        <p class="res-val" id="r2-hora">—</p>
+      </div>
+    </div>
+
+    <div class="niveles-wrap">
+      <div class="nivel-card">
+        <div class="nivel-mult">×1</div>
+        <div class="nivel-info">
+          <p class="nivel-nombre">Supervivencia</p>
+          <p class="nivel-precio" id="n1-precio">—</p>
+          <p class="nivel-sub">Mínimo para no perder dinero</p>
+        </div>
+      </div>
+      <div class="nivel-card destacado">
+        <div class="nivel-mult">×1.5</div>
+        <div class="nivel-info">
+          <p class="nivel-nombre">Crecimiento — objetivo real</p>
+          <p class="nivel-precio" id="n2-precio">—</p>
+          <p class="nivel-sub">Margen para invertir en tu carrera</p>
+        </div>
+      </div>
+      <div class="nivel-card">
+        <div class="nivel-mult">×2</div>
+        <div class="nivel-info">
+          <p class="nivel-nombre">Artista Premium</p>
+          <p class="nivel-precio" id="n3-precio">—</p>
+          <p class="nivel-sub">Con posicionamiento claro</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="diagnóstico-msg" id="r2-msg">—</div>
+
+    <div class="divider-v"></div>
+
+    <div class="cta-card">
+      <p>La diferencia entre escasez y abundancia no está en tu talento.<br>Está en tu estructura de negocio.</p>
+      <a class="btn-cta" href="https://artista-alto-valor.onrender.com" target="_blank">QUIERO CONSTRUIR ESA ESTRUCTURA</a>
+    </div>
+
+    <p class="reset-link" onclick="resetApp()">Hacer otro cálculo →</p>
+
+    <div class="app-footer">
+      <a href="https://diegocaridemusic.com" target="_blank">diegocaridemusic.com</a>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+/* ─── ESTADO ─────────────────────────────────────────── */
+const state = {
+  ingreso: 0,
+  gastos: 0,
+  horas: 0,
+  tarifaHora: 0,
+  necesidades: 0,
+  horasProd: 90,
+  horasBolo: 10,
+  tarifaObj: 0,
+};
+
+const TOTAL_STEPS = 5;
+
+/* ─── NAVEGACIÓN ──────────────────────────────────────── */
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + n).classList.add('active');
+
+  const wrap = document.getElementById('progressWrap');
+  if (n === 0) { wrap.style.display = 'none'; }
+  else {
+    wrap.style.display = 'block';
+    document.getElementById('stepNum').textContent = n;
+    document.getElementById('progressFill').style.width = ((n / TOTAL_STEPS) * 100) + '%';
+  }
+  window.scrollTo(0, 0);
+}
+
+/* ─── UTILS ───────────────────────────────────────────── */
+function euro(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
+function fmt(n)  { return n.toFixed(2).replace('.', ','); }
+function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+/* ─── SCREEN 1 — BOLO ─────────────────────────────────── */
+function toggleGastos() {
+  const det = document.getElementById('gastos-detalle');
+  det.classList.toggle('open');
+}
+
+function sumarGastos() {
+  const items = document.querySelectorAll('.gasto-item');
+  let total = 0;
+  items.forEach(i => total += parseFloat(i.value) || 0);
+  document.getElementById('gastos-total').value = total || '';
+  actualizarParcial();
+}
+
+function sincronizarGastos() {
+  // Si se escribe en el total y el detalle está cerrado, dejarlo
+}
+
+function actualizarParcial() {
+  const ing = val('ingreso');
+  const gas = val('gastos-total');
+  const neto = ing - gas;
+  const wrap = document.getElementById('beneficio-neto-wrap');
+  if (ing > 0) {
+    wrap.style.display = 'block';
+    document.getElementById('beneficio-neto').textContent = euro(neto);
+  } else {
+    wrap.style.display = 'none';
+  }
+  state.ingreso = ing;
+  state.gastos = gas;
+  document.getElementById('btn-s1').disabled = ing <= 0;
+}
+
+/* ─── SCREEN 2 — HORAS ────────────────────────────────── */
+function actualizarHoras() {
+  const total = val('h-estudio') + val('h-viaje') + val('h-prueba') + val('h-actuacion') + val('h-gestion');
+  const wrap = document.getElementById('horas-total-wrap');
+  if (total > 0) {
+    wrap.style.display = 'block';
+    document.getElementById('horas-total').textContent = total.toFixed(1) + ' h';
+  } else {
+    wrap.style.display = 'none';
+  }
+  state.horas = total;
+  document.getElementById('btn-s2').disabled = total <= 0;
+
+  // Precargar el slider de horas por bolo con las horas calculadas
+  const media = Math.min(20, Math.max(4, Math.round(total)));
+  const sliderBolo = document.getElementById('horas-bolo');
+  sliderBolo.value = media;
+  document.getElementById('hb-val').textContent = media + ' h';
+}
+
+/* ─── CÁLCULO R1 ──────────────────────────────────────── */
+function calcularR1() {
+  state.ingreso = val('ingreso');
+  state.gastos  = val('gastos-total');
+  state.horas   = val('h-estudio') + val('h-viaje') + val('h-prueba') + val('h-actuacion') + val('h-gestion');
+  const neto = state.ingreso - state.gastos;
+  state.tarifaHora = state.horas > 0 ? neto / state.horas : 0;
+
+  const cifraEl = document.getElementById('r1-cifra');
+  const t = state.tarifaHora;
+  cifraEl.textContent = fmt(t);
+  document.getElementById('r1-comp').textContent = fmt(t) + ' €/h';
+
+  // Color según nivel
+  cifraEl.className = 'resultado-cifra';
+  if (t < 12)       cifraEl.classList.add('malo');
+  else if (t < 20)  cifraEl.classList.add('regular');
+  else              cifraEl.classList.add('bien');
+
+  // Mensaje diagnóstico
+  let msg = '';
+  if (t < 12) {
+    msg = `Estás ganando ${fmt(t)} €/hora. Menos que cualquier trabajo sin cualificación. Y tú llevas años perfeccionando tu técnica. Ese dolor que sientes es el principio del cambio.`;
+  } else if (t < 20) {
+    msg = `Estás en ${fmt(t)} €/hora. Mejor que la media, pero aún lejos de lo que tu nivel merece. Hay estructura que construir.`;
+  } else {
+    msg = `Estás en ${fmt(t)} €/hora. Buen punto de partida. Ahora calcula cuánto necesitas realmente para vivir de esto con margen.`;
+  }
+  document.getElementById('r1-msg').textContent = msg;
+}
+
+/* ─── SCREEN 4 — OBJETIVO ─────────────────────────────── */
+function actualizarObj() {
+  const nec   = val('necesidades');
+  const hp    = parseInt(document.getElementById('horas-prod').value);
+  const hb    = parseInt(document.getElementById('horas-bolo').value);
+  state.necesidades = nec;
+  state.horasProd   = hp;
+  state.horasBolo   = hb;
+
+  const wrap = document.getElementById('obj-partial');
+  if (nec > 0) {
+    const tarifaH = nec / hp;
+    wrap.style.display = 'block';
+    document.getElementById('obj-tarifah').textContent = euro(tarifaH) + '/h';
+  } else {
+    wrap.style.display = 'none';
+  }
+  document.getElementById('btn-s4').disabled = nec <= 0;
+}
+
+/* ─── CÁLCULO R2 ──────────────────────────────────────── */
+function calcularR2() {
+  state.necesidades = val('necesidades');
+  state.horasProd   = parseInt(document.getElementById('horas-prod').value);
+  state.horasBolo   = parseInt(document.getElementById('horas-bolo').value);
+
+  const tarifaH = state.necesidades / state.horasProd;
+  const base    = tarifaH * state.horasBolo;
+  state.tarifaObj = base;
+
+  // Resumen
+  document.getElementById('r2-ahora').textContent = euro(state.ingreso);
+  document.getElementById('r2-hora').textContent  = fmt(state.tarifaHora) + ' €/h';
+
+  // Niveles
+  document.getElementById('n1-precio').textContent = euro(base)       + ' / bolo';
+  document.getElementById('n2-precio').textContent = euro(base * 1.5) + ' / bolo';
+  document.getElementById('n3-precio').textContent = euro(base * 2)   + ' / bolo';
+
+  // Mensaje
+  const gap = base - state.ingreso;
+  let msg = '';
+  if (gap > 0) {
+    msg = `Para vivir dignamente de tu música necesitas cobrar al menos ${euro(base)} por actuación — y ahora cobras ${euro(state.ingreso)}. La diferencia de ${euro(gap)} no es imposible: es una cuestión de posicionamiento.`;
+  } else {
+    msg = `Ya estás cerca de tu tarifa digna base. El siguiente nivel — ${euro(base * 1.5)} por actuación — es donde empieza el margen de crecimiento real.`;
+  }
+  document.getElementById('r2-msg').textContent = msg;
+}
+
+/* ─── RESET ───────────────────────────────────────────── */
+function resetApp() {
+  document.querySelectorAll('input[type=number]').forEach(i => i.value = '');
+  document.getElementById('horas-prod').value = 90;
+  document.getElementById('horas-bolo').value = 10;
+  document.getElementById('hp-val').textContent = '90 h';
+  document.getElementById('hb-val').textContent = '10 h';
+  document.getElementById('gastos-detalle').classList.remove('open');
+  document.getElementById('beneficio-neto-wrap').style.display = 'none';
+  document.getElementById('horas-total-wrap').style.display = 'none';
+  document.getElementById('obj-partial').style.display = 'none';
+  document.getElementById('btn-s1').disabled = true;
+  document.getElementById('btn-s2').disabled = true;
+  document.getElementById('btn-s4').disabled = true;
+  goTo(0);
+}
+</script>
+</body>
+</html>
